@@ -125,6 +125,7 @@ export default {
       linkageActiveParam: null,
       buttonTextColor: null,
       loading: true,
+      cancelTime: null,
       showSuspension: true,
       currentSeriesId: null,
       haveScrollType: [
@@ -271,6 +272,10 @@ export default {
       const that = this
       new Promise((resolve) => {
         resolve()
+      }).then(() => {
+        this.myChart?.clear?.()
+        this.myChart?.dispose?.()
+        this.myChart = null
       }).then(() => {
         //	此dom为echarts图标展示dom
         this.myChart = this.$echarts.getInstanceByDom(document.getElementById(this.chartId))
@@ -455,7 +460,8 @@ export default {
       // 指定图表的配置项和数据
       const chart = this.myChart
       this.setBackGroundBorder()
-      setTimeout(chart.setOption(option, true), 500)
+      clearTimeout(this.cancelTime)
+      this.cancelTime = setTimeout(chart.setOption(option, true), 500)
       window.removeEventListener('resize', chart.resize)
     },
     setBackGroundBorder() {

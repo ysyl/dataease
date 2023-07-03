@@ -9,7 +9,6 @@
       v-if="canvasId==='canvas-main'"
       ref="canvas-opt-bar"
       :canvas-style-data="canvasStyleData"
-      @link-export-pdf="downloadAsPDF"
     />
     <div
       :id="previewDomId"
@@ -165,7 +164,6 @@ import PDFPreExport from '@/views/panel/export/PDFPreExport'
 import { listenGlobalKeyDownPreview } from '@/components/canvas/utils/shortcutKey'
 import UserViewDialog from '@/components/canvas/customComponent/UserViewDialog'
 
-const erd = elementResizeDetectorMaker()
 export default {
   components: { UserViewDialog, ComponentWrapper, CanvasOptBar, PDFPreExport },
   model: {
@@ -237,6 +235,10 @@ export default {
   data() {
     return {
       imageDownloading: false,
+      canvasMain: null,
+      erd: null,
+      cancelTime: null,
+      tempCanvas: null,
       chartDetailsVisible: false,
       showChartInfo: {},
       showChartTableInfo: {},
@@ -369,11 +371,11 @@ export default {
     ]),
 
     searchButtonInfo() {
-      const result = this.buildButtonFilterMap(this.$store.state.componentData)
+      const result = this.buildButtonFilterMap(JSON.parse(JSON.stringify(this.$store.state.componentData)))
       return result
     },
     filterMap() {
-      const result = buildFilterMap(this.componentData)
+      const result = buildFilterMap(JSON.parse(JSON.stringify(this.componentData)))
       if (this.searchButtonInfo && this.searchButtonInfo.buttonExist && !this.searchButtonInfo.autoTrigger && this.searchButtonInfo.relationFilterIds) {
         for (const key in result) {
           if (Object.hasOwnProperty.call(result, key)) {
@@ -397,7 +399,6 @@ export default {
       handler(newVal, oldVla) {
         this.restore()
       },
-      deep: true
     },
     canvasStyleData: {
       handler(newVal, oldVla) {
@@ -407,14 +408,14 @@ export default {
     },
     mainHeight: {
       handler(newVal, oldVla) {
-        const _this = this
-        _this.$nextTick(() => {
-          if (_this.screenShotStatues) {
-            _this.initWatermark('preview-temp-canvas-main')
-          } else {
-            _this.initWatermark()
-          }
-        })
+        // const _this = this
+        // _this.$nextTick(() => {
+        //   if (_this.screenShotStatues) {
+        //     _this.initWatermark('preview-temp-canvas-main')
+        //   } else {
+        //     _this.initWatermark()
+        //   }
+        // })
       }
     }
   },
@@ -425,7 +426,9 @@ export default {
     }
   },
   mounted() {
-    this.initWatermark()
+    this.erd = elementResizeDetectorMaker()
+    console.log('mountedantvu-p-m')
+    // this.initWatermark()
     this._isMobile()
     this.initListen()
     this.$store.commit('clearLinkageSettingInfo', false)
@@ -439,12 +442,43 @@ export default {
     this.initPdfTemplate()
   },
   beforeDestroy() {
-    erd.uninstall(this.$refs[this.previewTempRefId])
-    erd.uninstall(this.$refs[this.previewRefId])
+    this.componentDataShow.forEach(ele => {
+      for (const i in ele) {
+        this.$delete(ele, i)
+      }
+    })
+    // this.$children.forEach(ele => {
+    //   for (const i in ele) {
+    //     ele[i] = null
+    //   }
+    // })
+    this.componentDataShow = []
+    clearTimeout(this.cancelTime)
+    console.log('mountedantvu-p-d', this.canvasMain, this.tempCanvas)
+    // this.erd.uninstall(this.canvasMain)
+    // this.erd.uninstall(this.tempCanvas)
     clearInterval(this.timer)
     this.canvasId === 'canvas-main' && bus.$off('pcChartDetailsDialog', this.openChartDetailsDialog)
     bus.$off('trigger-search-button', this.triggerSearchButton)
     bus.$off('trigger-reset-button', this.triggerResetButton)
+    this.erd = null
+    // async function destroyDeep(vnode) {
+    //   let vnodes
+    //   if (vnode.children || vnode.componentInstance?._vnode?.children) {
+    //     vnodes = vnode.children || vnode.componentInstance._vnode.children
+    //     for (const vn of vnodes) {
+    //       destroyDeep(vn)
+    //     }
+    //   }
+
+    //   vnode.componentInstance?.$destroy()
+    //   setTimeout(() => {
+    //     vnode.componentInstance = undefined
+    //     vnode.elm.innerHTML = ''
+    //   }, 0)
+    // }
+
+    // destroyDeep(this._vnode)
   },
   methods: {
     getWrapperChildRefs() {
@@ -506,7 +540,7 @@ export default {
       if (this.canvasId !== 'canvas-main') {
         return
       }
-      const result = this.buildButtonFilterMap(this.$store.state.componentData, isClear)
+      const result = this.buildButtonFilterMap(JSON.parse(JSON.stringify(this.$store.state.componentData)), isClear)
       this.searchButtonInfo.autoTrigger = result.autoTrigger
       this.searchButtonInfo.filterMap = result.filterMap
       this.buttonFilterMap = this.searchButtonInfo.filterMap
@@ -605,7 +639,7 @@ export default {
       }
       return false
     },
-    getComponentIndex(id) {
+    getComponentIndex(id) { 
       for (let index = 0; index < this.componentData.length; index++) {
         const item = this.componentData[index]
         if (item.id === id) return index
@@ -643,6 +677,7 @@ export default {
     changeStyleWithScale,
     getStyle,
     restore() {
+      this.componentDataShow = []
       const canvasHeight = document.getElementById(this.previewDomId).offsetHeight
       const canvasWidth = document.getElementById(this.previewDomId).offsetWidth
       this.scaleWidth = (canvasWidth) * 100 / this.canvasStyleData.width // 获取宽度比
@@ -673,7 +708,7 @@ export default {
     },
     handleScaleChange() {
       if (this.componentData) {
-        const componentData = deepCopy(this.componentData)
+        const componentData = JSON.parse(JSON.stringify(this.componentData))
         componentData.forEach(component => {
           Object.keys(component.style).forEach(key => {
             if (this.needToChangeHeight.includes(key)) {
@@ -719,30 +754,35 @@ export default {
       bus.$emit('onScroll')
     },
     initListen() {
-      const _this = this
-      const canvasMain = document.getElementById(this.previewDomId)
-      // 监听主div变动事件
-      if (canvasMain) {
-        erd.listenTo(canvasMain, element => {
-          _this.$nextTick(() => {
-            _this.restore()
-          })
-        })
-      }
-      setTimeout(() => {
-        // 监听画布div变动事件
-        const tempCanvas = document.getElementById(this.previewTempDomId)
-        if (tempCanvas) {
-          erd.listenTo(document.getElementById(this.previewTempDomId), element => {
-            _this.$nextTick(() => {
-              // 将mainHeight 修改为px 临时解决html2canvas 截图不全的问题
-              _this.mainHeight = tempCanvas.scrollHeight + 'px!important'
-              _this.mainHeightCount = tempCanvas.scrollHeight
-              this.$emit('mainHeightChange', _this.mainHeight)
-            })
-          })
-        }
-      }, 1500)
+      this.restore()
+
+      // this.$nextTick(() => {
+      //     })
+      // this.canvasMain = document.getElementById(this.previewDomId)
+      // // 监听主div变动事件
+      // if (this.canvasMain) {
+      //   this.erd.listenTo(this.canvasMain, element => {
+      //     this.$nextTick(() => {
+      //       this.restore()
+      //     })
+      //   })
+      // }
+      // clearTimeout(this.cancelTime)
+      // this.cancelTime = setTimeout(() => {
+      // clearTimeout(this.cancelTime)
+      //   // 监听画布div变动事件
+      //   this.tempCanvas = document.getElementById(this.previewTempDomId)
+      //   if (this.tempCanvas) {
+      //     this.erd.listenTo(document.getElementById(this.previewTempDomId), element => {
+      //       this.$nextTick(() => {
+      //         // 将mainHeight 修改为px 临时解决html2canvas 截图不全的问题
+      //         this.mainHeight = this.tempCanvas.scrollHeight + 'px!important'
+      //         this.mainHeightCount = this.tempCanvas.scrollHeight
+      //         this.$emit('mainHeightChange', this.mainHeight)
+      //       })
+      //     })
+      //   }
+      // }, 1500)
     },
     downloadAsPDF() {
       this.dataLoading = true

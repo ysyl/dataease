@@ -833,7 +833,9 @@ export default {
   },
   beforeDestroy() {
     bus.$off('component-on-drag', this.componentOnDrag)
+    bus.$off('component-dialog-edit', this.editDialog)
     bus.$off('component-dialog-style', this.componentDialogStyle)
+    bus.$off('button-dialog-edit', this.editButtonDialog)
     bus.$off('previewFullScreenClose', this.previewFullScreenClose)
     bus.$off('change_panel_right_draw', this.changeRightDrawOpen)
     bus.$off('delete-condition', this.deleteCustomComponent)

@@ -40,6 +40,7 @@
 </template>
 
 <script>
+import { Column } from '@antv/g2plot';
 import { baseLiquid } from '@/views/chart/chart/liquid/liquid'
 import { uuid } from 'vue-uuid'
 import ViewTrackBar from '@/components/canvas/components/editor/ViewTrackBar'
@@ -61,6 +62,7 @@ import ChartTitleUpdate from './ChartTitleUpdate.vue'
 import { equalsAny } from '@/utils/StringUtils'
 import { mapState } from 'vuex'
 import { baseFlowMapOption } from '@/views/chart/chart/map/map_antv'
+import { clear } from 'size-sensor';
 
 export default {
   name: 'ChartComponentG2',
@@ -123,6 +125,7 @@ export default {
       antVRenderStatus: false,
       linkageActiveParam: null,
       linkageActiveHistory: false,
+      cancelTime: null,
       remarkCfg: {
         show: false,
         content: ''
@@ -149,29 +152,57 @@ export default {
     ])
   },
   watch: {
-    chart: {
-      handler(newVal, oldVla) {
-        this.initTitle()
-        this.calcHeightDelay()
-        new Promise((resolve) => {
-          resolve()
-        }).then(() => {
-          this.drawView()
-        })
-      },
-      deep: true
-    },
+    // chart: {
+    //   handler(newVal, oldVla) {
+    //     this.initTitle()
+    //     this.calcHeightDelay()
+    //     new Promise((resolve) => {
+    //       resolve()
+    //     }).then(() => {
+    //       this.drawView()
+    //     })
+    //   }
+    // },
     resize() {
       this.drawEcharts()
     }
   },
   beforeDestroy() {
-    this.myChart.destroy()
     window.removeEventListener('resize', this.calcHeightDelay)
+    console.log('mountedantvu', this.myChart)
+    if (this.myChart.container) {
+      console.log('mountedantvu-container', this.myChart)
+      clear(this.myChart.container)
+    }
+    clearTimeout(this.cancelTime)
+    this.myChart?.clear?.()
+    this.myChart?.unbindSizeSensor?.()
+    this.myChart?.unbind?.()
+    this.myChart?.destroy?.()
+    if (this.myChart) {
+      for (const key in this.myChart.chart) {
+        this.myChart.chart[key] = null
+        this.$delete(this.myChart.chart, key)
+      }
+      for (const key in this.myChart) {
+        this.myChart[key] = null
+        this.$delete(this.myChart, key)
+      }
+    }
+    for (const key in this.pointParam) {
+      this.$delete(this.pointParam, key)
+    }
+    // this.$children.forEach(ele => {
+    //   for (const i in ele) {
+    //     ele[i] = null
+    //   }
+    // })
     this.myChart = null
   },
   mounted() {
+    console.log('mountedantv-m', this.myChart?.destroy);
     this.preDraw()
+    window.addEventListener('resize', this.calcHeightDelay)
   },
   methods: {
     reDrawView() {
@@ -219,10 +250,9 @@ export default {
       }).then(() => {
         this.drawView()
       })
-      window.addEventListener('resize', this.calcHeightDelay)
     },
     drawView() {
-      const chart = this.chart
+      const chart = JSON.parse(JSON.stringify(this.chart))
       // type
       // if (chart.data) {
       this.antVRenderStatus = true
@@ -236,86 +266,95 @@ export default {
           ]
         }
       }
-      if (chart.type === 'bar') {
-        this.myChart = baseBarOptionAntV(this.myChart, this.chartId, chart, this.antVAction, true, false)
-      } else if (chart.type === 'bar-group') {
-        this.myChart = baseBarOptionAntV(this.myChart, this.chartId, chart, this.antVAction, true, false)
-      } else if (equalsAny(chart.type, 'bar-stack', 'percentage-bar-stack')) {
-        this.myChart = baseBarOptionAntV(this.myChart, this.chartId, chart, this.antVAction, false, true)
-      } else if (chart.type === 'bar-group-stack') {
-        this.myChart = baseBarOptionAntV(this.myChart, this.chartId, chart, this.antVAction, true, true)
-      } else if (chart.type === 'bar-horizontal') {
-        this.myChart = hBaseBarOptionAntV(this.myChart, this.chartId, chart, this.antVAction, true, false)
-      } else if (equalsAny(chart.type, 'bar-stack-horizontal', 'percentage-bar-stack-horizontal')) {
-        this.myChart = hBaseBarOptionAntV(this.myChart, this.chartId, chart, this.antVAction, false, true)
-      } else if (chart.type === 'line') {
-        this.myChart = baseLineOptionAntV(this.myChart, this.chartId, chart, this.antVAction)
-      } else if (chart.type === 'area') {
-        this.myChart = baseAreaOptionAntV(this.myChart, this.chartId, chart, this.antVAction, false)
-      } else if (chart.type === 'line-stack') {
-        this.myChart = baseAreaOptionAntV(this.myChart, this.chartId, chart, this.antVAction, true)
-      } else if (chart.type === 'scatter') {
-        this.myChart = baseScatterOptionAntV(this.myChart, this.chartId, chart, this.antVAction)
-      } else if (chart.type === 'radar') {
-        this.myChart = baseRadarOptionAntV(this.myChart, this.chartId, chart, this.antVAction)
-      } else if (chart.type === 'gauge') {
-        this.myChart = baseGaugeOptionAntV(this.myChart, this.chartId, chart, this.antVAction, this.scale)
-      } else if (chart.type === 'pie' || chart.type === 'pie-donut') {
-        this.myChart = basePieOptionAntV(this.myChart, this.chartId, chart, this.antVAction)
-      } else if (chart.type === 'pie-rose' || chart.type === 'pie-donut-rose') {
-        this.myChart = basePieRoseOptionAntV(this.myChart, this.chartId, chart, this.antVAction)
-      } else if (chart.type === 'funnel') {
-        this.myChart = baseFunnelOptionAntV(this.myChart, this.chartId, chart, this.antVAction)
-      } else if (chart.type === 'treemap') {
-        this.myChart = baseTreemapOptionAntV(this.myChart, this.chartId, chart, this.antVAction)
-      } else if (chart.type === 'liquid') {
-        this.myChart = baseLiquid(this.myChart, this.chartId, chart)
-      } else if (chart.type === 'waterfall') {
-        this.myChart = baseWaterfallOptionAntV(this.myChart, this.chartId, chart, this.antVAction)
-      } else if (chart.type === 'word-cloud') {
-        this.myChart = baseWordCloudOptionAntV(this.myChart, this.chartId, chart, this.antVAction)
-      } else if (chart.type === 'chart-mix') {
-        this.myChart = baseMixOptionAntV(this.myChart, this.chartId, chart, this.antVAction)
-      } else if (chart.type === 'flow-map') {
-        this.myChart = baseFlowMapOption(this.myChart, this.chartId, chart, this.antVAction)
-      } else if (chart.type === 'bidirectional-bar') {
-        this.myChart = baseBidirectionalBarOptionAntV(this.myChart, this.chartId, chart, this.antVAction)
-      } else {
-        if (this.myChart) {
-          this.antVRenderStatus = false
-          this.myChart.destroy()
-        }
-      }
-
-      if (this.myChart && !equalsAny(chart.type, 'liquid', 'flow-map') && this.searchCount > 0) {
-        this.myChart.options.animation = false
-      }
-      if (this.myChart?.options?.legend) {
-        let pageNavigatorInactiveFill, pageNavigatorFill
-        if (this.canvasStyleData.panel.themeColor === 'dark') {
-          pageNavigatorFill = '#ffffff'
-          pageNavigatorInactiveFill = '#8c8c8c'
+      Object.freeze(chart)
+      console.log('mountedantv', chart);
+      new Promise((a) => {
+        a()
+      }).then(() => {
+        this.myChart?.destroy?.()
+        this.myChart = null
+      }).then(() => {
+        if (chart.type === 'bar') {
+          this.myChart = baseBarOptionAntV(null, this.chartId, chart, () => {}, true, false)
+        } else if (chart.type === 'bar-group') {
+          this.myChart = baseBarOptionAntV(null, this.chartId, chart, () => {}, true, false)
+        } else if (equalsAny(chart.type, 'bar-stack', 'percentage-bar-stack')) {
+          this.myChart = baseBarOptionAntV(null, this.chartId, chart, () => {}, false, true)
+        } else if (chart.type === 'bar-group-stack') {
+          this.myChart = baseBarOptionAntV(null, this.chartId, chart, () => {}, true, true)
+        } else if (chart.type === 'bar-horizontal') {
+          this.myChart = hBaseBarOptionAntV(null, this.chartId, chart, () => {}, true, false)
+        } else if (equalsAny(chart.type, 'bar-stack-horizontal', 'percentage-bar-stack-horizontal')) {
+          this.myChart = hBaseBarOptionAntV(null, this.chartId, chart, () => {}, false, true)
+        } else if (chart.type === 'line') {
+          this.myChart = baseLineOptionAntV(null, this.chartId, chart, () => {})
+        } else if (chart.type === 'area') {
+          this.myChart = baseAreaOptionAntV(null, this.chartId, chart, () => {}, false)
+        } else if (chart.type === 'line-stack') {
+          this.myChart = baseAreaOptionAntV(null, this.chartId, chart, () => {}, true)
+        } else if (chart.type === 'scatter') {
+          this.myChart = baseScatterOptionAntV(null, this.chartId, chart, () => {})
+        } else if (chart.type === 'radar') {
+          this.myChart = baseRadarOptionAntV(null, this.chartId, chart, () => {})
+        } else if (chart.type === 'gauge') {
+          this.myChart = baseGaugeOptionAntV(null, this.chartId, chart, () => {}, this.scale)
+        } else if (chart.type === 'pie' || chart.type === 'pie-donut') {
+          this.myChart = basePieOptionAntV(null, this.chartId, chart, () => {})
+        } else if (chart.type === 'pie-rose' || chart.type === 'pie-donut-rose') {
+          this.myChart = basePieRoseOptionAntV(null, this.chartId, chart, () => {})
+        } else if (chart.type === 'funnel') {
+          this.myChart = baseFunnelOptionAntV(null, this.chartId, chart, () => {})
+        } else if (chart.type === 'treemap') {
+          this.myChart = baseTreemapOptionAntV(null, this.chartId, chart, () => {})
+        } else if (chart.type === 'liquid') {
+          this.myChart = baseLiquid(null, this.chartId, chart)
+        } else if (chart.type === 'waterfall') {
+          this.myChart = baseWaterfallOptionAntV(null, this.chartId, chart, () => {})
+        } else if (chart.type === 'word-cloud') {
+          this.myChart = baseWordCloudOptionAntV(null, this.chartId, chart, () => {})
+        } else if (chart.type === 'chart-mix') {
+          this.myChart = baseMixOptionAntV(null, this.chartId, chart, () => {})
+        } else if (chart.type === 'flow-map') {
+          this.myChart = baseFlowMapOption(null, this.chartId, chart, () => {})
+        } else if (chart.type === 'bidirectional-bar') {
+          this.myChart = baseBidirectionalBarOptionAntV(null, this.chartId, chart, () => {})
         } else {
-          pageNavigatorFill = '#000000'
-          pageNavigatorInactiveFill = '#8c8c8c'
+          if (this.myChart) {
+            this.antVRenderStatus = false
+            this.myChart?.destroy?.()
+          }
         }
-        this.myChart.options.legend['pageNavigator'] = {
-          marker: {
-            style: {
-              inactiveFill: pageNavigatorInactiveFill, // 不能点击的颜色
-              fill: pageNavigatorFill // 正常的颜色
+
+        if (this.myChart && !equalsAny(chart.type, 'liquid', 'flow-map') && this.searchCount > 0) {
+          this.myChart.options.animation = false
+        }
+        if (this.myChart?.options?.legend) {
+          let pageNavigatorInactiveFill, pageNavigatorFill
+          if (this.canvasStyleData.panel.themeColor === 'dark') {
+            pageNavigatorFill = '#ffffff'
+            pageNavigatorInactiveFill = '#8c8c8c'
+          } else {
+            pageNavigatorFill = '#000000'
+            pageNavigatorInactiveFill = '#8c8c8c'
+          }
+          this.myChart.options.legend['pageNavigator'] = {
+            marker: {
+              style: {
+                inactiveFill: pageNavigatorInactiveFill, // 不能点击的颜色
+                fill: pageNavigatorFill // 正常的颜色
+              }
             }
           }
         }
-      }
 
-      if (this.antVRenderStatus) {
-        this.myChart.render()
-        if (this.linkageActiveHistory) {
-          this.linkageActive()
+        if (this.antVRenderStatus) {
+          this.myChart.render()
+          if (this.linkageActiveHistory) {
+            this.linkageActive()
+          }
         }
-      }
-      this.setBackGroundBorder()
+        this.setBackGroundBorder()
+      })
     },
 
     antVAction(param) {
@@ -436,7 +475,8 @@ export default {
       })
     },
     calcHeightDelay() {
-      setTimeout(() => {
+      clearTimeout(this.cancelTime)
+      this.cancelTime = setTimeout(() => {
         this.calcHeightRightNow()
       }, 100)
     },

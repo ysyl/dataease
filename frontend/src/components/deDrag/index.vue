@@ -829,6 +829,8 @@ export default {
   },
   beforeDestroy: function() {
     this.beforeDestroyFunction()
+    removeEvent(document.documentElement, eventsFor.move, this.move)
+    removeEvent(document.documentElement, eventsFor.stop, this.handleUp)
   },
   methods: {
     sizeAdaptor() {

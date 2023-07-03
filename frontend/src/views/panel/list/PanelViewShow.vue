@@ -127,7 +127,7 @@
               </de-btn>
             </span>
 
-            <span
+            <!-- <span
               v-if="activeTab!=='panels_star' || (activeTab ==='panels_star' && panelInfo.status === 'publish')"
               style="float: right;margin-right: 10px"
               class="de-tree"
@@ -230,7 +230,7 @@
                   </el-dropdown>
                 </el-dropdown-menu>
               </el-dropdown>
-            </span>
+            </span> -->
           </el-col>
         </div>
       </el-row>
@@ -368,12 +368,12 @@
       />
     </el-dialog>
 
-    <keep-alive>
+    <!-- <keep-alive>
       <app-export-form
         ref="appExportForm"
         @downLoadApp="downLoadApp"
       />
-    </keep-alive>
+    </keep-alive> -->
   </el-row>
 </template>
 <script>
@@ -445,7 +445,8 @@ export default {
       return name
     },
     mainCanvasComponentData() {
-      return getNowCanvasComponentData(this.canvasId)
+      return JSON.parse(JSON.stringify(this.$store.state.componentData.filter(item => item.canvasId === this.canvasId)))
+      // return getNowCanvasComponentData(this.canvasId)
     },
     imageWrapperStyle() {
       if (this.exporting) {
@@ -495,11 +496,18 @@ export default {
     }
   },
   mounted() {
+    console.log('mountedantvu-pv-m')
     bus.$on('set-panel-show-type', this.setPanelShowType)
     bus.$on('set-panel-share-user', this.setPanelShareUser)
     this.initPdfTemplate()
   },
   beforeDestroy() {
+    // this.$children.forEach(ele => {
+    //   for (const i in ele) {
+    //     ele[i] = null
+    //   }
+    // })
+    console.log('mountedantvu-pv-d')
     bus.$off('set-panel-show-type', this.setPanelShowType)
     bus.$off('set-panel-share-user', this.setPanelShareUser)
   },

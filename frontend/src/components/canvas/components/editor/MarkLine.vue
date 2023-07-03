@@ -37,12 +37,11 @@ export default {
   ]),
   mounted() {
     // 监听元素移动和不移动的事件
-    eventBus.$on('move', (isDownward, isRightward) => {
-      this.showLine(isDownward, isRightward)
-    })
+    eventBus.$on('move', this.showLine)
     eventBus.$on('unmove', this.hideLine)
   },
   beforeDestroy() {
+    eventBus.$off('move', this.showLine)
     eventBus.$off('unmove', this.hideLine)
   },
   methods: {

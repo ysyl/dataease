@@ -2,12 +2,10 @@
 const path = require('path')
 const defaultSettings = require('./src/settings.js')
 
-const pkg = require('./package.json')
-
 const CopyWebpackPlugin = require('copy-webpack-plugin')
 // const CompressionPlugin = require('compression-webpack-plugin')
-const webpack = require('webpack')
-const AddAssetHtmlPlugin = require('add-asset-html-webpack-plugin')
+// const webpack = require('webpack')
+// const AddAssetHtmlPlugin = require('add-asset-html-webpack-plugin')
 function resolve(dir) {
   return path.join(__dirname, dir)
 }
@@ -21,17 +19,31 @@ module.exports = {
   parallel,
   // 使用mock-server
   devServer: {
-    port: port,
+    host: '0.0.0.0', // 配置本项目运行主机
+    port: 8080, // 配置本项目运行端口
+    // 配置代理服务器来解决跨域问题
     proxy: {
-      '^(?!/login)': {
-        target: 'http://localhost:8081/',
-        ws: true
+      '/dev-api/static': {
+        target: 'http://localhost:8080', // 配置要替换的后台接口地址
+        changOrigin: true, // 配置允许改变Origin
+        ws: true, // proxy websockets
+        pathRewrite: {
+          '^/dev-api/static': '/static/'
+        }
+      },
+      '/dev-api': {
+        target: 'https://de.fit2cloud.com', // 配置要替换的后台接口地址
+        changOrigin: true, // 配置允许改变Origin
+        ws: true, // proxy websockets
+        pathRewrite: {
+          '^/dev-api': '/'
+        }
+      },
+      '/websocket': {
+        target: 'https://de.fit2cloud.com', // 配置要替换的后台接口地址
+        changOrigin: true, // 配置允许改变Origin
+        ws: true // proxy websockets
       }
-    },
-    open: true,
-    overlay: {
-      warnings: false,
-      errors: true
     }
   },
 
@@ -50,11 +62,6 @@ module.exports = {
         '@': resolve('src')
       }
     },
-    output: process.env.NODE_ENV === 'development' ? {} : {
-      filename: `js/[name].[contenthash:8].${pkg.version}.js`,
-      publicPath: '/',
-      chunkFilename: `js/[name].[contenthash:8].${pkg.version}.js`
-    },
     plugins: [
       new CopyWebpackPlugin([
         {
@@ -62,19 +69,19 @@ module.exports = {
           to: path.join(__dirname, 'dist/static')
         }
       ]),
-      new webpack.DllReferencePlugin({
-        context: process.cwd(),
-        manifest: require('./public/vendor/vendor-manifest.json')
-      }),
-      // 将 dll 注入到 生成的 html 模板中
-      new AddAssetHtmlPlugin({
-        // dll文件位置
-        filepath: path.resolve(__dirname, './public/vendor/*.js'),
-        // dll 引用路径
-        publicPath: './vendor',
-        // dll最终输出的目录
-        outputPath: './vendor'
-      })
+      // new webpack.DllReferencePlugin({
+      //   context: process.cwd(),
+      //   manifest: require('./public/vendor/vendor-manifest.json')
+      // }),
+      // // 将 dll 注入到 生成的 html 模板中
+      // new AddAssetHtmlPlugin({
+      //   // dll文件位置
+      //   filepath: path.resolve(__dirname, './public/vendor/*.js'),
+      //   // dll 引用路径
+      //   publicPath: './vendor',
+      //   // dll最终输出的目录
+      //   outputPath: './vendor'
+      // })
     ]
   },
   chainWebpack: config => {
@@ -101,7 +108,7 @@ module.exports = {
       })) */
     }
 
-    config.module
+config.module
       .rule('icons')
       .test(/\.svg$/)
       .include.add(resolve('src/deicons'))
@@ -111,16 +118,18 @@ module.exports = {
       .options({
         symbolId: '[name]'
       })
+
+
   },
   css: {
     loaderOptions: {
       sass: {
         prependData: `@import "@/style/index.scss"`
       }
-    },
-    extract: {
-      ignoreOrder: true
     }
   }
 
 }
+
+
+

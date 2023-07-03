@@ -322,7 +322,7 @@ export default {
       isFirstLoad: true, // 是否是第一次加载
       refId: null,
       getDataLoading: false,
-      chart: BASE_CHART_STRING,
+      chart: JSON.parse(JSON.stringify(BASE_CHART_STRING)),
       requestStatus: 'success',
       message: null,
       drillClickDimensionList: [],
@@ -556,10 +556,44 @@ export default {
   },
   mounted() {
     bus.$on('tab-canvas-change', this.tabSwitch)
+    console.log('mountedantvu-v-m')
     this.bindPluginEvent()
   },
 
   beforeDestroy() {
+    for (const i in this.chart) {
+      this.$delete(this.chart, i)
+    }
+    this.chart = null
+    for (const i in this.view) {
+      this.$delete(this.view, i)
+    }
+    this.view = null
+    for (const i in this.sourceCustomAttr) {
+      this.$delete(this.sourceCustomAttr, i)
+    }
+    this.sourceCustomAttr = null
+    for (const i in this.sourceCustomStyle) {
+      this.$delete(this.sourceCustomStyle, i)
+    }
+    this.sourceCustomStyle = null
+    for (const i in this.dataRowSelect) {
+      this.$delete(this.dataRowSelect, i)
+    }
+    this.dataRowSelect = null
+    for (const i in this.dataRowNameSelect) {
+      this.$delete(this.dataRowNameSelect, i)
+    }
+    this.dataRowNameSelect = null
+    console.log('mountedantvu-v-d')
+    // this.$children.forEach(ele => {
+    //   for (const i in ele) {
+    //     ele[i] = null
+    //   }
+    // })
+    clearTimeout(this.cancelTime)
+    this.destroyTimeMachine()
+    this.destroyScaleTimeMachine()
     this.innerRefreshTimer && clearInterval(this.innerRefreshTimer)
     bus.$off('plugin-chart-click', this.pluginChartClick)
     bus.$off('plugin-jump-click', this.pluginJumpClick)
@@ -569,6 +603,7 @@ export default {
     bus.$off('onSubjectChange', this.optFromBatchThemeChange)
     bus.$off('onThemeColorChange', this.optFromBatchThemeChange)
     bus.$off('onThemeAttrChange', this.optFromBatchSingleProp)
+    bus.$off('tab-canvas-change', this.tabSwitch)
     bus.$off('clear_panel_linkage', this.clearPanelLinkage)
   },
   created() {
@@ -712,7 +747,7 @@ export default {
         try {
           this.$refs[this.element.propValue.id]?.reDrawView()
         } catch (e) {
-          console.error('reDrawView-error：', this.element.propValue.id)
+          // console.error('reDrawView-error：', this.element.propValue.id)
         }
       }
     },
@@ -796,7 +831,7 @@ export default {
             this.chart = response.data
             this.view = response.data
             if (this.chart.type.includes('table')) {
-              this.$store.commit('setLastViewRequestInfo', { viewId: id, requestInfo: requestInfo })
+              this.$store.commit('setLastViewRequestInfo', { viewId: id, requestInfo: JSON.parse(JSON.stringify(requestInfo)) })
             }
             this.buildInnerRefreshTimer(this.chart.refreshViewEnable, this.chart.refreshUnit, this.chart.refreshTime)
             this.$emit('fill-chart-2-parent', this.chart)
@@ -832,14 +867,14 @@ export default {
             this.requestStatus = 'success'
             this.httpRequest.status = true
           } else {
-            console.error('err2-' + JSON.stringify(response))
+            // console.error('err2-' + JSON.stringify(response))
             this.requestStatus = 'error'
             this.message = response.message
           }
           this.isFirstLoad = false
           return true
         }).catch(err => {
-          console.error('err-' + err)
+          // console.error('err-' + err)
           this.requestStatus = 'error'
           if (err.message && err.message.indexOf('timeout') > -1) {
             this.message = this.$t('panel.timeout_refresh')
@@ -865,8 +900,8 @@ export default {
     },
     initCurFields(chartDetails) {
       this.curFields = []
-      this.dataRowSelect = []
-      this.dataRowNameSelect = []
+      this.dataRowSelect = {}
+      this.dataRowNameSelect = {}
       if (chartDetails.data && chartDetails.data.sourceFields) {
         const checkAllAxisStr = chartDetails.xaxis + chartDetails.xaxisExt + chartDetails.yaxis + chartDetails.yaxisExt
         chartDetails.data.sourceFields.forEach(field => {
@@ -1216,6 +1251,7 @@ export default {
     // 边框变化
     chartResize(index) {
       if (this.$refs[this.element.propValue.id]) {
+        clearTimeout(this.timeMachine)
         this.timeMachine = setTimeout(() => {
           if (index === this.changeIndex) {
             this.chart.isPlugin
@@ -1230,6 +1266,7 @@ export default {
     // 边框变化 修改视图内部参数
     chartScale(index) {
       if (this.$refs[this.element.propValue.id]) {
+        clearTimeout(this.scaleTimeMachine)
         this.scaleTimeMachine = setTimeout(() => {
           if (index === this.changeScaleIndex) {
             this.mergeScale()
@@ -1257,7 +1294,7 @@ export default {
         if (this.componentViewsData[this.chart.id]) {
           this.componentViewsData[this.chart.id]['title'] = this.chart.title
           if (param.refreshProp) {
-            this.componentViewsData[this.chart.id][param.refreshProp] = this.chart[param.refreshProp]
+            this.componentViewsData[this.chart.id][param.refreshProp] = JSON.parse(JSON.stringify(this.chart[param.refreshProp]))
           }
         }
         this.mergeScale()

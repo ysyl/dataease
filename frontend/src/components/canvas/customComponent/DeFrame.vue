@@ -105,6 +105,7 @@ export default {
     eventBus.$on('startMoveIn', this.frameLinksChange)
   },
   beforeDestroy() {
+    eventBus.$off('startMoveIn', this.frameLinksChange)
     bus.$off('frameLinksChange-' + this.element.id, this.frameLinksChange)
   },
   methods: {

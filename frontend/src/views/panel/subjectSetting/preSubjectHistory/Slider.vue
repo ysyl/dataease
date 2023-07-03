@@ -176,6 +176,9 @@ export default {
   mounted() {
     this.querySubjectWithGroup()
   },
+  beforeDestroy() {
+    clearInterval(this.temp)
+  },
   methods: {
     subjectDelete(id) {
       deleteSubject(id).then(response => {

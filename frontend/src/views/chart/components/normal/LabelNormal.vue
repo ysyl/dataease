@@ -121,6 +121,7 @@ export default {
   },
   watch: {
     chart() {
+      window.removeEventListener('resize', this.calcHeight)
       this.init()
       this.calcHeight()
     }

@@ -958,6 +958,12 @@ export default {
       if (data.nodeType === 'panel') {
         // 清理pc布局缓存
         this.$store.commit('setComponentDataCache', null)
+        this.$store.state.componentData.forEach(ele => {
+          for (const i in ele) {
+            this.$delete(ele, i)
+          }
+        })
+        this.$store.commit('setComponentData', [])
         initPanelData(data.id, false, function(response) {
           viewPanelLog({ panelId: data.id }).then((res) => {
             bus.$emit('set-panel-show-type', 0)

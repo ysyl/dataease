@@ -473,6 +473,7 @@ export default {
     this.calcTabLength()
   },
   beforeDestroy() {
+    this.timer && clearInterval(this.timer)
     bus.$off('add-new-tab', this.addNewTab)
   },
   methods: {

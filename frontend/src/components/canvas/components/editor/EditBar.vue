@@ -409,6 +409,8 @@ export default {
     }
   },
   beforeDestroy() {
+    bus.$off('initCurFields-' + this.element.id, this.initCurFields)
+    eventBus.$off('viewEnlarge', this.viewEnlarge)
     eventBus.$off('preview', this.showViewDetails)
   },
   methods: {

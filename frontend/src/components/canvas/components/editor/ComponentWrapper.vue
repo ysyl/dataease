@@ -76,8 +76,8 @@
 
 <script>
 import { getStyle } from '@/components/canvas/utils/style'
-import runAnimation from '@/components/canvas/utils/runAnimation'
-import { mixins } from '@/components/canvas/utils/events'
+// import runAnimation from '@/components/canvas/utils/runAnimation'
+// import { mixins } from '@/components/canvas/utils/events'
 import { mapState } from 'vuex'
 import DeOutWidget from '@/components/dataease/DeOutWidget'
 import EditBar from '@/components/canvas/components/editor/EditBar'
@@ -88,7 +88,7 @@ import { imgUrlTrans } from '@/components/canvas/utils/utils'
 
 export default {
   components: { CloseBar, MobileCheckBar, DeOutWidget, EditBar },
-  mixins: [mixins],
+  // mixins: [mixins],
   props: {
     canvasId: {
       type: String,
@@ -220,9 +220,21 @@ export default {
     ])
   },
   mounted() {
-    runAnimation(this.$el, this.config.animations)
+    console.log('mountedantvu-c-m')
+    // runAnimation(this.$el, this.config.animations)
+  },
+  beforeDestroy() { 
+    // this.$children.forEach(ele => {
+    //   for (const i in ele) {
+    //     ele[i] = null
+    //   }
+    // })
+    console.log('mountedantvu-c-d')
   },
   methods: {
+    setChartData() {
+
+    },
     getComponentId() {
       return this.config.id
     },
@@ -294,12 +306,12 @@ export default {
     },
 
     handleClick() {
-      const events = this.config.events
-      if (events) {
-        Object.keys(events).forEach(event => {
-          this[event](events[event])
-        })
-      }
+      // const events = this.config.events
+      // if (events) {
+      //   Object.keys(events).forEach(event => {
+      //     this[event](events[event])
+      //   })
+      // }
     },
     elementMouseDown(e) {
       // // private 设置当前组件数据及状态
@@ -309,10 +321,10 @@ export default {
       }
       // 阻止冒泡事件
       e.stopPropagation()
-      const _this = this
-      setTimeout(() => {
-        _this.$store.commit('setCurComponent', { component: _this.config, index: _this.index })
-      }, 200)
+      // const _this = this
+      // setTimeout(() => {
+      //   _this.$store.commit('setCurComponent', { component: _this.config, index: _this.index })
+      // }, 200)
     },
     showViewDetails(params) {
       this.$refs.wrapperChild.openChartDetailsDialog(params)

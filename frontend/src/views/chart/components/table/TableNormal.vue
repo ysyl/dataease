@@ -228,7 +228,8 @@ export default {
 
   },
   watch: {
-    chart: function() {
+    chart: function () {
+      window.removeEventListener('resize', this.calcHeightDelay)
       this.init()
     }
   },

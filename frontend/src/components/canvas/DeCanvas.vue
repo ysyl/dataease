@@ -241,12 +241,12 @@ export default {
   mounted() {
     const _this = this
     // 监听div变动事件
-    const erd = elementResizeDetectorMaker()
-    erd.listenTo(document.getElementById(this.canvasDomId), element => {
-      _this.$nextTick(() => {
-        _this.restore()
-      })
-    })
+    // const erd = elementResizeDetectorMaker()
+    // erd.listenTo(document.getElementById(this.canvasDomId), element => {
+    //   _this.$nextTick(() => {
+    //     _this.restore()
+    //   })
+    // })
   },
   beforeDestroy() {
     bus.$off('component-dialog-edit', this.editDialog)

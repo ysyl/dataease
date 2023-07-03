@@ -153,7 +153,9 @@ export default {
     bus.$on('change_panel_right_draw', this.changeRightDrawOpen)
   },
   beforeDestroy() {
+    bus.$off('change_panel_right_draw', this.changeRightDrawOpen)
     bus.$off('fieldSelect-' + this.element.propValue.viewId)
+    bus.$off('initCurFields-' + this.element.id, this.initCurFieldsChange)
   },
   methods: {
     changeRightDrawOpen(param){
