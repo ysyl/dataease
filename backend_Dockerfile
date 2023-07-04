@@ -1,0 +1,17 @@
+FROM registry.cn-qingdao.aliyuncs.com/dataease/fabric8-java-alpine-openjdk8-jre:edge-chromium
+
+RUN mkdir -p /opt/apps /opt/dataease/data/feature/full /opt/dataease/drivers
+
+ADD mapFiles/* /opt/dataease/data/feature/full/
+
+ADD drivers/* /opt/dataease/drivers/
+
+ADD backend/target/backend-1.18.7.jar /opt/apps
+
+ENV JAVA_APP_JAR=/opt/apps/backend-1.18.7.jar
+
+ENV AB_OFF=true
+
+ENV JAVA_OPTIONS=-Dfile.encoding=utf-8
+
+CMD ["java", "-jar", "/opt/apps/backend-1.18.7.jar"]
